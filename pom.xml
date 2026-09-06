@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath /> <!-- lookup parent from repository -->
+  </parent>
+  <groupId>com.example</groupId>
+  <artifactId>demo</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>demo</name>
+  <description>Demo</description>
+  <url />
+  <licenses>
+    <license />
+  </licenses>
+  <developers>
+    <developer />
+  </developers>
+  <scm>
+    <connection />
+    <developerConnection />
+    <tag />
+    <url />
+  </scm>
+  <properties>
+    <java.version>21</java.version>
+    <daemon.version>1.6.1</daemon.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+
+    <!--
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-devtools</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>repackage</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.6.3</version>
+        <executions>
+          <execution>
+            <id>enforce-maven-version</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>3.9.12</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 1) Copy dependency JARs to target/release/lib -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.11.0</version>
+        <executions>
+          <execution>
+            <id>copy-runtime-deps</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/release/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
+              <!-- Avoid conflicts by using unique names for JARs with duplicate names -->
+              <useRepositoryLayout>false</useRepositoryLayout>
+              <stripVersion>false</stripVersion>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 2) Output the application JAR to target/release
+      and write Class-Path and Main-Class to the manifest -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.5.1</version>
+        <configuration>
+          <!-- Set the JAR output directory to target/release -->
+          <outputDirectory>${project.build.directory}/release</outputDirectory>
+          <archive>
+            <manifest>
+              <mainClass>com.example.demo.DemoApplication</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- 2) Download the procrun ZIP -->
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>1.13.0</version>
+        <executions>
+          <execution>
+            <id>download-commons-daemon</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>
+                https://archive.apache.org/dist/commons/daemon/binaries/windows/commons-daemon-${daemon.version}-bin-windows.zip
+              </url>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <outputFileName>commons-daemon.zip</outputFileName>
+              <overwrite>false</overwrite>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 3) Extract the ZIP and copy the required executables to service/ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>unpack-and-copy-procrun</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Extraction directory -->
+                <property name="daemon.unpack.dir"
+                  value="${project.build.directory}/commons-daemon-unpack" />
+
+                <delete dir="${daemon.unpack.dir}" quiet="true" />
+                <mkdir dir="${daemon.unpack.dir}" />
+
+                <!-- Extract the ZIP -->
+                <unzip src="${project.build.directory}/commons-daemon.zip"
+                  dest="${daemon.unpack.dir}" />
+
+                <!-- Copy prunmgr.exe -->
+                <copy overwrite="true"
+                  todir="${project.build.directory}/release">
+                  <fileset dir="${daemon.unpack.dir}">
+                    <include name="prunmgr.exe" />
+                  </fileset>
+                </copy>
+
+                <!-- Copy prunsrv.exe -->
+                <copy overwrite="true" tofile="${project.build.directory}/release/prunsrv.exe">
+                  <fileset dir="${daemon.unpack.dir}">
+                    <include name="amd64/prunsrv.exe" />
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 3) Package target/release into a ZIP archive (assembly) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.8.0</version>
+        <executions>
+          <execution>
+            <id>dist-zip</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly-dist.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.21.0</version>
+        <configuration>
+          <ignoredVersions>
+            <ignoredVersion>.*-M.*</ignoredVersion>
+            <ignoredVersion>.*-alpha.*</ignoredVersion>
+            <ignoredVersion>.*-beta.*</ignoredVersion>
+            <ignoredVersion>.*-RC.*</ignoredVersion>
+            <ignoredVersion>.*Alpha.*</ignoredVersion>
+            <ignoredVersion>.*Dev.*</ignoredVersion>
+            <ignoredVersion>.*Beta.*</ignoredVersion>
+          </ignoredVersions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
